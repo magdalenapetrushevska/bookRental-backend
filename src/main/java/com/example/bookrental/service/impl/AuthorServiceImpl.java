@@ -8,6 +8,7 @@ import com.example.bookrental.service.AuthorService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class AuthorServiceImpl implements AuthorService {
@@ -23,8 +24,8 @@ public class AuthorServiceImpl implements AuthorService {
     }
 
     @Override
-    public Author findById(Long id) {
-        return this.authorRepository.findById(id).orElseThrow(() -> new AuthorNotFoundException(id));
+    public Optional<Author> findById(Long id) {
+        return Optional.of(this.authorRepository.findById(id).orElseThrow(() -> new AuthorNotFoundException(id)));
     }
 
     @Override

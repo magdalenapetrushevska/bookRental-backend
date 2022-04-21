@@ -4,6 +4,7 @@ import com.example.bookrental.model.Author;
 import com.example.bookrental.model.Book;
 import com.example.bookrental.model.dto.BookDto;
 import com.example.bookrental.model.enumerations.Category;
+import com.example.bookrental.model.exceptions.AuthorNotFoundException;
 import com.example.bookrental.model.exceptions.BookNotFoundException;
 import com.example.bookrental.model.exceptions.NotAvailableCopiesOfBookException;
 import com.example.bookrental.repository.BookRepository;
@@ -38,49 +39,53 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public Optional<Book> save(String name, Category category, Long authorId, int availableCopies) {
-        //TODO како да се земе category која што е enum тип
-        Author author = this.authorService.findById(authorId);
+        Author author = this.authorService.findById(authorId).orElseThrow(()->new AuthorNotFoundException(authorId));
         return Optional.of(this.bookRepository.save(new Book(name, category, author, availableCopies)));
     }
 
     @Override
     public Optional<Book> save(BookDto bookDto) {
-        Author author = this.authorService.findById(bookDto.getAuthor());
 
+        Author author = this.authorService.findById(bookDto.getAuthor()).orElseThrow(()->new AuthorNotFoundException(bookDto.getAuthor()));
         Book book = new Book(bookDto.getName(),bookDto.getCategory(),author,bookDto.getAvailableCopies());
+
         this.bookRepository.save(book);
         return Optional.of(book);
 
     }
 
+
     @Override
-    public Book findById(Long id) {
-        return this.bookRepository.findById(id).orElseThrow(() -> new BookNotFoundException(id));
+    public Optional<Book> findById(Long id) {
+        return Optional.of(this.bookRepository.findById(id) .orElseThrow(() -> new BookNotFoundException(id)));
     }
 
     @Override
-    public Optional<Book> edit(Long id, String name, Category category, Long authorId, int availableCopies) {
+    public Optional<Book> edit(Long id, BookDto bookDto) {
         Book book = this.bookRepository.findById(id).orElseThrow(() -> new BookNotFoundException(id));
-        Author author = this.authorService.findById(authorId);
+        Author newAuthor = this.authorService.findById(bookDto.getAuthor()).orElseThrow(() -> new AuthorNotFoundException(id));
 
-        book.setName(name);
-        book.setCategory(category);
-        book.setAuthor(author);
-        book.setAvailableCopies(availableCopies);
+        book.setName(bookDto.getName());
+        book.setCategory(bookDto.getCategory());
+        book.setAuthor(newAuthor);
+        book.setAvailableCopies(bookDto.getAvailableCopies());
 
-        return Optional.of(this.bookRepository.save(book));
+        this.bookRepository.save(book);
+        return Optional.of(book);
+
     }
+
 
     @Override
     public void markAsTaken(Long id) {
         Book book = this.bookRepository.findById(id).orElseThrow(() -> new BookNotFoundException(id));
 
-        int numberOfAvaliableCopies = book.getAvailableCopies();
-        if(numberOfAvaliableCopies==0){
+        int numberOfAvailableCopies = book.getAvailableCopies();
+        if(numberOfAvailableCopies==0){
             throw new NotAvailableCopiesOfBookException(id);
         }
-        numberOfAvaliableCopies--;
-        book.setAvailableCopies(numberOfAvaliableCopies);
+        numberOfAvailableCopies--;
+        book.setAvailableCopies(numberOfAvailableCopies);
 
         this.bookRepository.save(book);
     }
